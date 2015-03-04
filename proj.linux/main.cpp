@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <string>
 
-//如果是C++,using namespace cocos2d
 USING_NS_CC;
 
 int main(int argc, char **argv)
@@ -14,4 +13,3 @@ int main(int argc, char **argv)
     AppDelegate app;
     return Application::getInstance()->run();
 }
-

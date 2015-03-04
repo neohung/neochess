@@ -2,6 +2,66 @@
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="8" height="8" tilewidth="60" tileheight="60" nextobjectid="1">
  <tileset firstgid="1" name="chessimages" tilewidth="60" tileheight="60" spacing="2" margin="2">
   <image source="chessimages.png" trans="ff00ff" width="1304" height="250"/>
+  <tile id="64">
+   <properties>
+    <property name="arms" value="bishop"/>
+   </properties>
+  </tile>
+  <tile id="65">
+   <properties>
+    <property name="arms" value="bishop"/>
+   </properties>
+  </tile>
+  <tile id="67">
+   <properties>
+    <property name="arms" value="queen"/>
+   </properties>
+  </tile>
+  <tile id="68">
+   <properties>
+    <property name="arms" value="queen"/>
+   </properties>
+  </tile>
+  <tile id="70">
+   <properties>
+    <property name="arms" value="knight"/>
+   </properties>
+  </tile>
+  <tile id="71">
+   <properties>
+    <property name="arms" value="knight"/>
+   </properties>
+  </tile>
+  <tile id="73">
+   <properties>
+    <property name="arms" value="pawn"/>
+   </properties>
+  </tile>
+  <tile id="74">
+   <properties>
+    <property name="arms" value="pawn"/>
+   </properties>
+  </tile>
+  <tile id="76">
+   <properties>
+    <property name="arms" value="king"/>
+   </properties>
+  </tile>
+  <tile id="77">
+   <properties>
+    <property name="arms" value="king"/>
+   </properties>
+  </tile>
+  <tile id="79">
+   <properties>
+    <property name="arms" value="rook"/>
+   </properties>
+  </tile>
+  <tile id="80">
+   <properties>
+    <property name="arms" value="rook"/>
+   </properties>
+  </tile>
  </tileset>
  <layer name="board" width="8" height="8">
   <data encoding="base64" compression="zlib">

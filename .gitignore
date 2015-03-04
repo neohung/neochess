@@ -25,7 +25,7 @@ xcuserdata
 Pods/*
 
 #cocos2d-x
-cocos2d/
+cocos2d/*
 Debug.win32/
 libs/
 bin/
