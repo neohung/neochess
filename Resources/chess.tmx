@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="8" height="8" tilewidth="60" tileheight="60" nextobjectid="1">
+ <tileset firstgid="1" name="chessimages" tilewidth="60" tileheight="60" spacing="2" margin="2">
+  <image source="chessimages.png" trans="ff00ff" width="1304" height="250"/>
+ </tileset>
+ <layer name="board" width="8" height="8">
+  <data encoding="base64" compression="zlib">
+   eJwTY2BgEAdiMRw0PjkxAnJDQT8A3F4FoQ==
+  </data>
+ </layer>
+ <layer name="chess" width="8" height="8">
+  <data encoding="base64" compression="zlib">
+   eJwLYGBg8ABiRyD2A2IXIHYCYncgDgRibyD2wkMPNMDnNhAN8gPILyA/+QKxKwPEryA/BwAxAKzECTM=
+  </data>
+ </layer>
+</map>
