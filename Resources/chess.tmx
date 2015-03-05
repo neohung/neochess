@@ -68,9 +68,14 @@
    eJwTY2BgEAdiMRw0PjkxAnJDQT8A3F4FoQ==
   </data>
  </layer>
- <layer name="chess" width="8" height="8">
+ <layer name="chess1" width="8" height="8">
   <data encoding="base64" compression="zlib">
-   eJwLYGBg8ABiRyD2A2IXIHYCYncgDgRibyD2wkMPNMDnNhAN8gPILyA/+QKxKwPEryA/BwAxAKzECTM=
+   eJxjYBjawAuIvfHQgUDsDsROQOwLxK5A7AjEHkAcAMQAnlQEmg==
+  </data>
+ </layer>
+ <layer name="chess2" width="8" height="8">
+  <data encoding="base64" compression="zlib">
+   eJwLYGBg8ABiRyD2A2IXIHYCYncgDgRibyD2wkMPdQAAD3AEmg==
   </data>
  </layer>
 </map>

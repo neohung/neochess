@@ -25,13 +25,20 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
  ActionInterval *moveLeft = MoveBy::create(0.1, Vec2(-60, 0));
  ActionInterval *moveUp = MoveBy::create(0.1, Vec2(0, 60));
  ActionInterval *moveDown = MoveBy::create(0.1, Vec2(0, -60));
- auto obj = this->map->getLayer("chess")->getTileAt(this->selected);
+ auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
  switch((int)keyCode)
  {
     case 6:
     Director::getInstance()->end();
     break;
         case 35: //Enter
+	if (strcmp(this->turn, "chess1")){
+		log("chess1's turn");
+		strcpy(this->turn, "chess1");
+	}else{
+		log("chess2's turn");
+		strcpy(this->turn, "chess2");
+	}
         break;
         case 26: //Left
         obj->runAction(moveLeft);
@@ -118,6 +125,8 @@ bool HelloWorld::init()
     getEventDispatcher()->addEventListenerWithSceneGraphPriority(touchlistener, this);  
 
     ////////////////////////////////
+    strcpy(this->turn, "chess1"); 
+    //this->turn = "chess1"; 
     auto tileMap = TMXTiledMap::create("chess.tmx");
     this->map = tileMap;
     float map_offset_x = ((tileMap->getMapSize().width*tileMap->getTileSize().width)-visibleSize.width)/visibleSize.width ;
@@ -158,24 +167,41 @@ bool HelloWorld::init()
 }
 
 bool HelloWorld::onTouchBegan(Touch* touch, Event* event){  
+log("TouchBegan");
     Point pt = this->convertToNodeSpace(touch->getLocation());
     this->selected = TouchpositionToTile(pt);
-    show_moveable(this->selected);
+    if ((this->selected.x >= 0) && (this->selected.x <= 7) && (this->selected.y >= 0) && (this->selected.y <= 7)){
+    	show_moveable(this->selected);
+    }else{
+	this->selected.x = -1;
+	this->selected.y = -1;
+    }
     //TileIndexToPosition(Vec2(0,0));
+log("index=(%lf,%lf)", this->selected.x,this->selected.y);
     return true;
 }
 
 void HelloWorld::show_moveable(Vec2 index){
 
-   int gid = this->map->getLayer("chess")->getTileGIDAt(index); 
+   int gid = this->map->getLayer(this->turn)->getTileGIDAt(index); 
    if (gid) {
        auto properties = this->map->getPropertiesForGID(gid).asValueMap();
        if (!properties.empty()) {
         auto arms = properties["arms"].asString();
         if ("pawn" == arms) {
-            this->needed_undo_index.push_back(Vec2(index.x,index.y-1));
-            this->needed_undo_gid.push_back(this->map->getLayer("chess")->getTileGIDAt(Vec2(index.x,index.y-1)));
-            this->map->getLayer("chess")->setTileGID(1,Vec2(index.x,index.y-1));
+		if (strcmp(this->turn, "chess1")){
+			//chess2
+			int selected_gid = 1;
+            		this->needed_undo_index.push_back(Vec2(index.x,index.y+1));
+            		this->needed_undo_gid.push_back(this->map->getLayer(this->turn)->getTileGIDAt(Vec2(index.x,index.y+1)));
+            		this->map->getLayer(this->turn)->setTileGID(selected_gid,Vec2(index.x,index.y+1));
+		}else{
+			//chess1
+			int selected_gid = 1;
+            		this->needed_undo_index.push_back(Vec2(index.x,index.y-1));
+            		this->needed_undo_gid.push_back(this->map->getLayer(this->turn)->getTileGIDAt(Vec2(index.x,index.y-1)));
+            		this->map->getLayer(this->turn)->setTileGID(selected_gid,Vec2(index.x,index.y-1));
+		}
             log("is pawn\n");
             return;
         }else if("king" == arms){
@@ -199,24 +225,42 @@ void HelloWorld::show_moveable(Vec2 index){
      }
  }else{
    log("no properties\n");   
+	this->selected.x = -1;
+	this->selected.y = -1;
 }
 }
      //log();
 }
 
 void HelloWorld::onTouchEnded(Touch* touch, Event* event){  
-    if (!needed_undo_gid.empty()){
+	
+    if ((this->selected.x >= 0) && (this->selected.x <= 7) && (this->selected.y >= 0) && (this->selected.y <= 7)){
+  	auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
+	ActionInterval *moveoffset = MoveTo::create(0.0, TileIndexToMapPosition(this->selected));
+  	obj->runAction(moveoffset);
+    }
+    while(!needed_undo_gid.empty()){
         Vec2 index =this->needed_undo_index[this->needed_undo_index.size()-1];
         int gid = this->needed_undo_gid[this->needed_undo_gid.size()-1];
-        this->map->getLayer("chess")->setTileGID(gid,index);
+        this->map->getLayer(this->turn)->setTileGID(gid,index);
         this->needed_undo_index.pop_back();
         this->needed_undo_gid.pop_back();
     }
+    this->selected.x = -1;
+    this->selected.y = -1;
     return;
 }
 void HelloWorld::onTouchMoved(Touch* touch, Event* event){ 
+log("TouchMoved");
+ if (this->selected.y == -1 || this->selected.x == -1){
+	return;
+ }else{
+  auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
   auto xDelta = touch->getDelta().x;
-  auto yDelta = touch->getDelta().y; 
+  auto yDelta = touch->getDelta().y;
+ActionInterval *moveoffset = MoveBy::create(0.0, Vec2(xDelta, yDelta ));
+  obj->runAction(moveoffset);
+ }
   return;
 }
 
@@ -242,6 +286,16 @@ Point HelloWorld::TileIndexToPosition(Vec2 index)
     //log("%d,%d \n",x,y);
 return Point(x,y);  
 }  
+
+Point HelloWorld::TileIndexToMapPosition(Vec2 index)
+{
+    Size mapSize = this->map->getMapSize();
+    Size tileSize = this->map->getTileSize();
+    int x = index.x * tileSize.width;   
+    int y = (mapSize.height * (tileSize.height)) - (index.y * tileSize.height) - tileSize.height;  
+    //log("%d,%d \n",x,y);
+return Point(x,y);
+}
 
 void HelloWorld::menuItem1Callback(cocos2d::Ref* pSender){  
     log("get menuItem1Callback");

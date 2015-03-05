@@ -11,9 +11,11 @@ class HelloWorld : public cocos2d::Layer
 public:
     TMXTiledMap* map;
     Vec2 selected;
-      std::vector<Vec2> needed_undo_index;
+    std::vector<Vec2> needed_undo_index;
     std::vector<int> needed_undo_gid;
     Sprite* hero;
+    char turn[6];
+    //std::string turn;
     cocos2d::Sprite *bg_sprite[5];  
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
     static cocos2d::Scene* createScene();
@@ -34,6 +36,7 @@ public:
     virtual void onTouchMoved(Touch* touch, Event* event);
     Vec2 TouchpositionToTile(Point pt);
     Point TileIndexToPosition(Vec2 index);  
+    Point TileIndexToMapPosition(Vec2 index);  
     void show_moveable(Vec2 index);
 
 	////////////////////////////////
