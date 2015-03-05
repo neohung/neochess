@@ -11,6 +11,8 @@ class HelloWorld : public cocos2d::Layer
 public:
     TMXTiledMap* map;
     Vec2 selected;
+    int selected_arms_gid;
+    std::vector<Vec2> indexCanMove;
     std::vector<Vec2> needed_undo_index;
     std::vector<int> needed_undo_gid;
     Sprite* hero;
@@ -38,7 +40,9 @@ public:
     Point TileIndexToPosition(Vec2 index);  
     Point TileIndexToMapPosition(Vec2 index);  
     void show_moveable(Vec2 index);
-
+    void recoveryBoardChange(void);
+    void pushCanMove(std::vector<Vec2> canMoves, int canMove_gid);
+void moveChess(Point pt); 
 	////////////////////////////////
     // implement the "static create()" method manually
         CREATE_FUNC(HelloWorld);
