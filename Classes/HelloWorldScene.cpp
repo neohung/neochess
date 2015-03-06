@@ -7,13 +7,10 @@ Scene* HelloWorld::createScene()
 {
     // 'scene' is an autorelease object
   auto scene = Scene::create();
-
     // 'layer' is an autorelease object
   auto layer = HelloWorld::create();
-
     // add layer as a child to scene
   scene->addChild(layer);
-
     // return the scene
   return scene;
 }
@@ -27,6 +24,7 @@ void HelloWorld::changeTurn(void){
           strcpy(this->turn, "chess2");
         }
 }
+
 std::string HelloWorld::getOppositeName(void){
  if (strcmp(this->turn, "chess1")){
           return "chess1";
@@ -38,12 +36,6 @@ std::string HelloWorld::getOppositeName(void){
 void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
 {
  log("Key with keycode %d pressed", keyCode );
- /*ActionInterval *moveRight = MoveBy::create(0.1, Vec2(60, 0));
- ActionInterval *moveLeft = MoveBy::create(0.1, Vec2(-60, 0));
- ActionInterval *moveUp = MoveBy::create(0.1, Vec2(0, 60));
- ActionInterval *moveDown = MoveBy::create(0.1, Vec2(0, -60));
- auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
-*/
  switch((int)keyCode)
  {
   case 6:
@@ -85,16 +77,17 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
 // on "init" you need to initialize your instance
     bool HelloWorld::init()
     {
+
     //////////////////////////////
     // 1. super init first
       if ( !Layer::init() )
       {
         return false;
-      }
+     }
 
       Size visibleSize = Director::getInstance()->getVisibleSize();
       Vec2 origin = Director::getInstance()->getVisibleOrigin();
-
+       Director::getInstance()->sharedDirector()->setDepthTest(true);
     /////////////////////////////
     // 2. add a menu item with "X" image, which is clicked to quit the program
     //    you may modify it.
@@ -157,9 +150,10 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
 
   bool HelloWorld::onTouchBegan(Touch* touch, Event* event){  
     //log("TouchBegan");
+  Size mapSize = this->map->getMapSize();
     Point pt = this->convertToNodeSpace(touch->getLocation());
     this->selected = TouchpositionToTile(pt);
-    if ((this->selected.x >= 0) && (this->selected.x <= 7) && (this->selected.y >= 0) && (this->selected.y <= 7)){
+    if ((this->selected.x >= 0) && (this->selected.x < mapSize.width ) && (this->selected.y >= 0) && (this->selected.y < mapSize.height)){
     	show_moveable(this->selected);
     }else{
      this->selected.x = -1;
@@ -184,10 +178,18 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
        continue;
      }
    }
+   int has_opposite_gid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(canMove);
+   if (has_opposite_gid){
+    // this->map->getLayer(this->getOppositeName())->getTileAt(canMove)->setOpacity(100);  
+        this->map->getLayer(this->getOppositeName())->getTileAt(canMove)->setVertexZ(0.8);
+   }
    this->needed_undo_index.push_back(canMove);
    this->needed_undo_gid.push_back(this->map->getLayer(this->turn)->getTileGIDAt(canMove));
    this->map->getLayer(this->turn)->setTileGID(canMove_gid,canMove);
    this->map->getLayer(this->turn)->getTileAt(canMove)->setOpacity(100);        
+//
+    this->map->getLayer(this->turn)->getTileAt(canMove)->setVertexZ(0.5);
+//
    indexCanMove.push_back(canMove);
    canMoves.pop_back();
  }
@@ -459,9 +461,12 @@ void HelloWorld::onTouchMoved(Touch* touch, Event* event){
   if (this->selected.y == -1 || this->selected.x == -1){
    return;
  }else{
-  auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
- //obj->setZOrder(999);
- // obj->getParent()->reorderChild(obj,666);
+ auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
+ obj->retain();
+ //this->map->getLayer(this->turn)->reorderChild(obj,99);
+ obj->setVertexZ(1.0);
+//obj->setZOrder(999);
+  //obj->getParent()->reorderChild(obj,99);
 
   auto xDelta = touch->getDelta().x;
   auto yDelta = touch->getDelta().y;
