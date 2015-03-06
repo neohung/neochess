@@ -18,6 +18,23 @@ Scene* HelloWorld::createScene()
   return scene;
 }
 
+void HelloWorld::changeTurn(void){
+   if (strcmp(this->turn, "chess1")){
+          log("chess1's turn");
+          strcpy(this->turn, "chess1");
+        }else{
+          log("chess2's turn");
+          strcpy(this->turn, "chess2");
+        }
+}
+std::string HelloWorld::getOppositeName(void){
+ if (strcmp(this->turn, "chess1")){
+          return "chess1";
+        }else{
+          return "chess2";
+        }
+}
+
 void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
 {
  log("Key with keycode %d pressed", keyCode );
@@ -135,21 +152,6 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
       this->addChild(tileMap, -1);
 
       log("%lf,%lf\n", visibleSize.width,(visibleSize.width-(tileMap->getMapSize().width*tileMap->getTileSize().width))/visibleSize.width );
-/*
-    auto objects = tileMap->getObjectGroup("Objects");
-
-    ValueMap spawnpoint = objects->getObject("SpawnPoint");
-    float x = spawnpoint["x"].asFloat();
-    float y = spawnpoint["y"].asFloat();
-    //this->player_location.x = x;
-    //this->player_location.y = y;
-
-    CCLOG("[%f,%f]\n",x,y);
-    this->hero = Sprite::create("Player.png");
-    this->hero->setPosition(x, y);
-    tileMap->addChild(this->hero); 
-/////////////////////////////////////
-  */
     return true;
   }
 
@@ -157,19 +159,16 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
     //log("TouchBegan");
     Point pt = this->convertToNodeSpace(touch->getLocation());
     this->selected = TouchpositionToTile(pt);
-    //log("this->selected(%lf,%lf)",this->selected.x,this->selected.y);
     if ((this->selected.x >= 0) && (this->selected.x <= 7) && (this->selected.y >= 0) && (this->selected.y <= 7)){
     	show_moveable(this->selected);
     }else{
      this->selected.x = -1;
      this->selected.y = -1;
    }
-    //TileIndexToPosition(Vec2(0,0));
-   //log("index=(%lf,%lf)", this->selected.x,this->selected.y);
    return true;
  }
 
- void HelloWorld::pushCanMove(std::vector<Vec2> canMoves, int canMove_gid)
+ void HelloWorld::pushCanMove(std::vector<Vec2> canMoves,int canMove_gid)
  {  
   Size mapSize = this->map->getMapSize();
   while(!canMoves.empty())
@@ -178,29 +177,166 @@ void HelloWorld::onKeyPressed(EventKeyboard ::KeyCode keyCode, Event*event)
    if ((canMove.x < 0) || (canMove.x >= (mapSize.width) ) || (canMove.y < 0) || (canMove.y >= (mapSize.height) )){
      canMoves.pop_back();
      continue;
-   } 
-   int gid = this->map->getLayer(this->turn)->getTileGIDAt(canMove);
-   if (gid)
-   {
-    auto canMove_properties = this->map->getPropertiesForGID(gid).asValueMap();
-    if (!canMove_properties.empty()) 
-    {
-     auto is_arms = canMove_properties["arms"].asString();
-     if (is_arms != "")  //arms on the can move position
-     {
-      //arms on the can move position
-      canMoves.pop_back();
-      continue;
+   }else{
+     int canMove_gid = this->map->getLayer(this->turn)->getTileGIDAt(canMove);
+     if (canMove_gid) {
+       canMoves.pop_back();
+       continue;
+     }
+   }
+   this->needed_undo_index.push_back(canMove);
+   this->needed_undo_gid.push_back(this->map->getLayer(this->turn)->getTileGIDAt(canMove));
+   this->map->getLayer(this->turn)->setTileGID(canMove_gid,canMove);
+   this->map->getLayer(this->turn)->getTileAt(canMove)->setOpacity(100);        
+   indexCanMove.push_back(canMove);
+   canMoves.pop_back();
+ }
+}
+
+void HelloWorld::addXCrossCanMove(Vec2 index, std::vector<Vec2>* canMoves){
+  Size mapSize = this->map->getMapSize();
+  for(int moveCase=0;moveCase < 4;moveCase++){
+      int i = 1;
+      Vec2 canMove = Vec2(-1,-1);
+      bool exit_condition = true;
+      while(exit_condition){
+        if (moveCase == 0){
+          exit_condition = ((index.x+i) < (mapSize.width) && (index.y+i) < (mapSize.height));
+          canMove.x = index.x+i;
+          canMove.y = index.y+i;
+        }else if (moveCase == 1){
+          exit_condition = ((index.x - i) >= 0 && ((index.y+i) < (mapSize.height)) );
+          canMove.x = index.x - i;
+          canMove.y = index.y + i;
+        }else if (moveCase == 2){
+          exit_condition = ((index.x+i) < (mapSize.width) && (index.y-i) >= 0);
+          canMove.x = index.x + i;
+          canMove.y = index.y - i;
+        }else if (moveCase == 3){
+          exit_condition = ((index.x - i) >= 0 && ((index.y-i) >= 0));
+          canMove.x = index.x - i;
+          canMove.y = index.y - i;
+        }
+        if (!exit_condition) {
+          i++;
+          continue;
+        }
+        int canMove_gid = this->map->getLayer(this->turn)->getTileGIDAt(canMove);
+        if (!canMove_gid) {
+          canMove_gid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(canMove);
+          canMoves->push_back(canMove);
+          i++;
+          if (!canMove_gid) {
+            continue;
+          }else{
+            break;
+          } 
+        }
+        i++;
+        break;
+      }
     }
-  }
 }
-this->needed_undo_index.push_back(canMove);
-this->needed_undo_gid.push_back(this->map->getLayer(this->turn)->getTileGIDAt(canMove));
-this->map->getLayer(this->turn)->setTileGID(canMove_gid,canMove);
-this->map->getLayer(this->turn)->getTileAt(canMove)->setOpacity(100);        
-indexCanMove.push_back(canMove);
-canMoves.pop_back();
+
+void HelloWorld::addPawnCanMove(Vec2 index, std::vector<Vec2>* canMoves){
+  Size mapSize = this->map->getMapSize();
+     float canMoveOne;
+     float canMoveTwo;
+     Vec2 canMoveEatLeft;
+     Vec2 canMoveEatRight;
+     bool moveTwoCondition = false;
+     if (strcmp(this->turn, "chess1")){
+          //chess2
+      canMoveOne = index.y+1;
+      canMoveTwo = index.y+2;
+      canMoveEatLeft.x = index.x+1;
+      canMoveEatLeft.y = index.y+1;
+       canMoveEatRight.x = index.x-1;
+      canMoveEatRight.y = index.y+1;
+      moveTwoCondition = (index.y == 1);
+
+    }else{
+          //chess1
+      canMoveOne = index.y-1;
+      canMoveTwo = index.y-2;
+       canMoveEatLeft.x = index.x-1;
+      canMoveEatLeft.y = index.y-1;
+       canMoveEatRight.x = index.x+1;
+      canMoveEatRight.y = index.y-1;
+      moveTwoCondition = (index.y == 6);
+    }
+      if ((canMoveOne >= 0) && (canMoveOne < mapSize.height)){
+        int checkgid = this->map->getLayer(this->turn)->getTileGIDAt(Vec2(index.x,canMoveOne));
+        int checkoppositegid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(Vec2(index.x,canMoveOne));
+        if (!checkgid && !checkoppositegid){
+          canMoves->push_back(Vec2(index.x,canMoveOne)); 
+          if (moveTwoCondition){
+            checkgid = this->map->getLayer(this->turn)->getTileGIDAt(Vec2(index.x,canMoveTwo));
+            checkoppositegid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(Vec2(index.x,canMoveTwo));
+             if (!checkgid && !checkoppositegid){
+              canMoves->push_back(Vec2(index.x,canMoveTwo)); 
+             }
+          }
+        }
+    }
+    if ((canMoveEatRight.x >= 0) && (canMoveEatRight.y >= 0 )&&(canMoveEatRight.x < mapSize.width) && (canMoveEatRight.y < mapSize.height)){
+         int checkoppositegid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(canMoveEatRight);
+     if (checkoppositegid){
+      canMoves->push_back(canMoveEatRight);
+     }
+    }
+    if ((canMoveEatLeft.x >= 0) && (canMoveEatLeft.y >= 0 )&&(canMoveEatLeft.x < mapSize.width) && (canMoveEatLeft.y < mapSize.height)){
+           int checkoppositegid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(canMoveEatLeft);
+     if (checkoppositegid){
+      canMoves->push_back(canMoveEatLeft);
+     }
+    }
 }
+
+void HelloWorld::addTenCrossCanMove(Vec2 index, std::vector<Vec2>* canMoves){
+  Size mapSize = this->map->getMapSize();
+  for(int moveCase=0;moveCase < 4;moveCase++){
+      int i = 1;
+      Vec2 canMove = Vec2(-1,-1);
+      bool exit_condition = true;
+      while(exit_condition){
+        if (moveCase == 0){
+          exit_condition = ((index.x+i) < (mapSize.width));
+          canMove.x = index.x+i;
+          canMove.y = index.y;
+        }else if (moveCase == 1){
+          exit_condition = ((index.y - i) >= 0);
+          canMove.x = index.x;
+          canMove.y = index.y - i;
+        }else if (moveCase == 2){
+          exit_condition = ((index.x - i) >= 0);
+          canMove.x = index.x - i;
+          canMove.y = index.y;
+        }else if (moveCase == 3){
+          exit_condition = ((index.y + i) < (mapSize.height));
+          canMove.x = index.x;
+          canMove.y = index.y + i;
+        }
+        if (!exit_condition) {
+          i++;
+          continue;
+        }
+        int canMove_gid = this->map->getLayer(this->turn)->getTileGIDAt(canMove);
+        if (!canMove_gid) {
+          //log("push %lf,%lf",canMove.x,canMove.y);
+          canMove_gid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(canMove);
+          canMoves->push_back(canMove);
+          i++;
+          if (!canMove_gid) {
+            continue;
+          }else{
+            break;
+          } 
+        }
+        i++;
+        break;
+      }
+    }
 }
 
 void HelloWorld::show_moveable(Vec2 index){
@@ -212,15 +348,9 @@ void HelloWorld::show_moveable(Vec2 index){
    auto properties = this->map->getPropertiesForGID(gid).asValueMap();
    if (!properties.empty()) {
     auto arms = properties["arms"].asString();
-    std::vector<Vec2> canMoves;
+    std::vector<Vec2> canMoves;    
     if ("pawn" == arms) {
-     if (strcmp(this->turn, "chess1")){
-          //chess2
-      canMoves.push_back(Vec2(index.x,index.y+1));
-    }else{
-          //chess1
-      canMoves.push_back(Vec2(index.x,index.y-1));
-    }
+  addPawnCanMove(index, &canMoves);
     //log("is pawn\n");
   }else if("king" == arms){
     canMoves.push_back(Vec2(index.x,index.y+1));
@@ -233,62 +363,14 @@ void HelloWorld::show_moveable(Vec2 index){
     canMoves.push_back(Vec2(index.x+1,index.y-1));
     //log("is king\n");
   }else if("queen" == arms){
-        int i=0;
-    while((index.x-i >=0) || (index.y-i >=0)){
-      i++;
-      canMoves.push_back(Vec2(index.x-i,index.y-i));
-    }
-    i=0;
-    while((index.x+i <= mapSize.width) || (index.y+i <= mapSize.height)){
-      i++;
-      canMoves.push_back(Vec2(index.x+i,index.y+i));
-    }
-    i=0;
-    while((index.x-i >= 0) || (index.y+i <= mapSize.height)){
-      i++;
-      canMoves.push_back(Vec2(index.x-i,index.y+i));
-    }
-    i=0;
-    while((index.x+i <= mapSize.width) || (index.y-i >= 0)){
-      i++;
-      canMoves.push_back(Vec2(index.x+i,index.y-i));
-    }
-    for(int i=0;i<= mapSize.width;i++){
-      canMoves.push_back(Vec2(i,index.y));
-    }
-    for(int j=0;j<= mapSize.height;j++){
-      canMoves.push_back(Vec2(index.x,j));
-    }
-//    log("is queen\n");
+   addXCrossCanMove(index, &canMoves);
+   addTenCrossCanMove(index, &canMoves);
+   //    log("is queen\n");
   }else if("bishop" == arms){
-    int i=0;
-    while((index.x-i >=0) || (index.y-i >=0)){
-      i++;
-      canMoves.push_back(Vec2(index.x-i,index.y-i));
-    }
-    i=0;
-    while((index.x+i <= mapSize.width) || (index.y+i <= mapSize.height)){
-      i++;
-      canMoves.push_back(Vec2(index.x+i,index.y+i));
-    }
-    i=0;
-    while((index.x-i >= 0) || (index.y+i <= mapSize.height)){
-      i++;
-      canMoves.push_back(Vec2(index.x-i,index.y+i));
-    }
-    i=0;
-    while((index.x+i <= mapSize.width) || (index.y-i >= 0)){
-      i++;
-      canMoves.push_back(Vec2(index.x+i,index.y-i));
-    }
-    log("is bishop\n");
+    addXCrossCanMove(index, &canMoves);
+    //log("is bishop\n");
   }else if("rook" == arms){
-    for(int i=0;i<= mapSize.width;i++){
-      canMoves.push_back(Vec2(i,index.y));
-    }
-    for(int j=0;j<= mapSize.height;j++){
-      canMoves.push_back(Vec2(index.x,j));
-    }
+    addTenCrossCanMove(index, &canMoves);
     //log("is rook\n");
   }else if("knight" == arms){
     canMoves.push_back(Vec2(index.x-1,index.y+2));
@@ -301,7 +383,7 @@ void HelloWorld::show_moveable(Vec2 index){
     canMoves.push_back(Vec2(index.x+1,index.y-2));
     //log("is knight\n");
   }
-  pushCanMove(canMoves, 1);     
+  pushCanMove(canMoves,1);    
 }else{
   log("no properties\n");   
   this->selected.x = -1;
@@ -327,27 +409,39 @@ void HelloWorld::onTouchEnded(Touch* touch, Event* event){
   return;
 }
 
+void HelloWorld::gotEat(std::string arms){
+  log("[%s] got eat!", arms.c_str()); 
+}
+
 void HelloWorld::moveChess(Point pt){  
- if ((this->selected.x >= 0) && (this->selected.x <= 7) && (this->selected.y >= 0) && (this->selected.y <= 7)){
+   Size mapSize = this->map->getMapSize();
+ if ((this->selected.x >= 0) && (this->selected.x < mapSize.width) && (this->selected.y >= 0) && (this->selected.y < mapSize.height)){
   Vec2 targetIndex = TouchpositionToTile(pt);
   auto obj = this->map->getLayer(this->turn)->getTileAt(this->selected);
   while(!indexCanMove.empty()){
     Vec2 canMove = indexCanMove[indexCanMove.size()-1];
     if (targetIndex.x==canMove.x && targetIndex.y == canMove.y){
-      //ActionInterval *moveoffset = MoveTo::create(0.0, TileIndexToMapPosition(targetIndex));
-      //obj->runAction(moveoffset);
-     this->map->getLayer(this->turn)->setTileGID(this->selected_arms_gid,targetIndex);
-      //this->map->getLayer(this->turn)->appendTileForGID(this->selected_arms_gid,targetIndex);
-     this->map->getLayer(this->turn)->removeTileAt(this->selected);
+      int checkOppsiteGid = this->map->getLayer(this->getOppositeName())->getTileGIDAt(targetIndex);
+      if (checkOppsiteGid){
+        //Got Eat
+        this->map->getLayer(this->getOppositeName())->removeTileAt(targetIndex);
+        auto gotEatProperties = this->map->getPropertiesForGID(checkOppsiteGid).asValueMap();
+        if (!gotEatProperties.empty()) {
+          auto gotEatArms = gotEatProperties["arms"].asString();
+          gotEat(gotEatArms);
+        }
+      }    
+      this->map->getLayer(this->turn)->setTileGID(this->selected_arms_gid,targetIndex);
+      this->map->getLayer(this->turn)->removeTileAt(this->selected);
      break;
-   }
-   indexCanMove.pop_back();
+    }
+    indexCanMove.pop_back();
+  }
+  if (indexCanMove.empty()){
+   ActionInterval *moveoffset = MoveTo::create(0.0, TileIndexToMapPosition(this->selected));
+   obj->runAction(moveoffset);
+  }
  }
- if (indexCanMove.empty()){
-  ActionInterval *moveoffset = MoveTo::create(0.0, TileIndexToMapPosition(this->selected));
-  obj->runAction(moveoffset);
-}
-}
 }
 
 void HelloWorld::recoveryBoardChange(void){  

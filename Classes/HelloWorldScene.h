@@ -15,16 +15,12 @@ public:
     std::vector<Vec2> indexCanMove;
     std::vector<Vec2> needed_undo_index;
     std::vector<int> needed_undo_gid;
-    Sprite* hero;
     char turn[6];
-    //std::string turn;
     cocos2d::Sprite *bg_sprite[5];  
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
     static cocos2d::Scene* createScene();
-
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
     virtual bool init();
-    
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
     	/////////////////////////////
@@ -41,8 +37,14 @@ public:
     Point TileIndexToMapPosition(Vec2 index);  
     void show_moveable(Vec2 index);
     void recoveryBoardChange(void);
-    void pushCanMove(std::vector<Vec2> canMoves, int canMove_gid);
-void moveChess(Point pt); 
+    void pushCanMove(std::vector<Vec2> canMoves,int canMove_gid);
+    std::string getOppositeName(void);
+    void changeTurn(void);
+    void addTenCrossCanMove(Vec2 index, std::vector<Vec2>* canMoves);
+    void addXCrossCanMove(Vec2 index, std::vector<Vec2>* canMoves);
+    void addPawnCanMove(Vec2 index, std::vector<Vec2>* canMoves);
+    void gotEat(std::string arms);
+    void moveChess(Point pt); 
 	////////////////////////////////
     // implement the "static create()" method manually
         CREATE_FUNC(HelloWorld);
